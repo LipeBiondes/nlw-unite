@@ -1,4 +1,4 @@
-import { ChangeEvent, useState } from 'react'
+import { ChangeEvent, useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 import 'dayjs/locale/pt-br'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -15,40 +15,99 @@ import { Table } from './table/table'
 import { TableHeader } from './table/table-header'
 import { TableCell } from './table/table-cell'
 import { TableRow } from './table/table-row'
-import { attendees } from '../data/attendees'
 
 dayjs.extend(relativeTime)
 dayjs.locale('pt-br')
+
+interface Attendee {
+  id: string
+  name: string
+  email: string
+  createdAt: string
+  checkedInAt: string | null
+}
+
 export function AttendeeList() {
-  const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
-  const [findAttendees, setFindAttendees] = useState(attendees)
-  const totalPages = Math.ceil(attendees.length / 10)
+  const [search, setSearch] = useState(() => {
+    const url = new URL(window.location.toString())
+
+    if (url.searchParams.has('search')) {
+      return url.searchParams.get('search') ?? ''
+    }
+
+    return ''
+  })
+  const [page, setPage] = useState(() => {
+    const url = new URL(window.location.toString())
+
+    if (url.searchParams.has('page')) {
+      return Number(url.searchParams.get('page'))
+    }
+
+    return 1
+  })
+
+  const [total, setTotal] = useState(0)
+  const [attendees, setAttendees] = useState<Attendee[]>([])
+
+  useEffect(() => {
+    const url = new URL(
+      'http://localhost:3333/events/2e783d8f-2ba2-41ac-8d00-9940300a27f6/attendees'
+    )
+
+    url.searchParams.set('pageIndex', String(page - 1))
+
+    if (search.length > 0) {
+      url.searchParams.set('query', search)
+    }
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        setAttendees(data.attendees)
+        setTotal(data.total)
+      })
+  }, [page, search])
+
+  const setCurrentSearch = (search: string) => {
+    const url = new URL(window.location.toString())
+
+    url.searchParams.set('query', search)
+    window.history.pushState({}, '', url)
+
+    setSearch(search)
+  }
+
+  const setCurrentPage = (page: number) => {
+    const url = new URL(window.location.toString())
+
+    url.searchParams.set('page', String(page))
+    window.history.pushState({}, '', url)
+
+    setPage(page)
+  }
+
+  const totalPages = total < 10 ? 1 : Math.ceil(total / 10)
 
   function onSearchIpuntChange(event: ChangeEvent<HTMLInputElement>) {
-    setSearch(event.target.value)
-    const searchAttendees = attendees.filter(attendee => {
-      return attendee.email
-        .toLowerCase()
-        .includes(event.target.value.toLowerCase())
-    })
-    setFindAttendees(searchAttendees)
+    setCurrentSearch(event.target.value)
+    setCurrentPage(1)
   }
 
   function goToNextPage() {
-    setPage(page + 1)
+    setCurrentPage(page + 1)
   }
 
   function goToPreviousPage() {
-    setPage(page - 1)
+    setCurrentPage(page - 1)
   }
 
   function goToFirstPage() {
-    setPage(1)
+    setCurrentPage(1)
   }
 
   function goToLastPage() {
-    setPage(totalPages)
+    setCurrentPage(totalPages)
   }
 
   return (
@@ -61,7 +120,8 @@ export function AttendeeList() {
             onChange={e => {
               onSearchIpuntChange(e)
             }}
-            className="bg-transparent flex-1 outline-none h-auto border-0 p-0 text-sm"
+            value={search}
+            className="bg-transparent flex-1 outline-none h-auto border-0 p-0 text-sm focus:ring-0"
             placeholder="Buscar participantes..."
           />
         </div>
@@ -84,28 +144,37 @@ export function AttendeeList() {
           </tr>
         </thead>
         <tbody>
-          {findAttendees.slice((page - 1) * 10, page * 10).map(attendee => {
+          {attendees.map(ateendee => {
             return (
-              <TableRow key={attendee.id}>
+              <TableRow key={ateendee.id}>
                 <TableCell>
                   <input
                     type="checkbox"
-                    className="size-4 bg-black/20 rounded border-white/10 "
+                    className="size-4 bg-black/20 rounded border border-white/10"
                   />
                 </TableCell>
-                <TableCell>{attendee.id}</TableCell>
+                <TableCell>{ateendee.id}</TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1">
                     <span className="font-semibold text-white">
-                      {attendee.name}
+                      {ateendee.name}
                     </span>
-                    <span>{attendee.email}</span>
+                    <span>{ateendee.email}</span>
                   </div>
                 </TableCell>
-                <TableCell>{dayjs().to(attendee.createdAt)}</TableCell>
-                <TableCell>{dayjs().to(attendee.checkedInAt)}</TableCell>
+                <TableCell>{dayjs().to(ateendee.createdAt)}</TableCell>
                 <TableCell>
-                  <IconButton transparent>
+                  {ateendee.checkedInAt === null ? (
+                    <span className="text-zinc-400">Não fez check-in</span>
+                  ) : (
+                    dayjs().to(ateendee.checkedInAt)
+                  )}
+                </TableCell>
+                <TableCell>
+                  <IconButton
+                    transparent
+                    className="bg-black/20 border border-white/10 rounded-md p-1.5"
+                  >
                     <MoreHorizontal className="size-4" />
                   </IconButton>
                 </TableCell>
@@ -116,7 +185,7 @@ export function AttendeeList() {
         <tfoot>
           <tr className="border-b border-white/10">
             <TableCell colSpan={3}>
-              Mostrando 10 de {attendees.length} itens
+              Mostrando {attendees.length} de {total} itens
             </TableCell>
             <TableCell className="text-right" colSpan={3}>
               <div className="inline-flex items-center gap-8">
