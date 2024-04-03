@@ -2,12 +2,15 @@ import { FastifyInstance } from 'fastify'
 import { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma'
+import { BadRequest } from './_erros/bad-request'
 
 export async function registerForEvent(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().post(
     '/events/:eventId/attendees',
     {
       schema: {
+        summary: 'Register an attendee for an event',
+        tags: ['attendees'],
         params: z.object({
           eventId: z.string().uuid()
         }),
@@ -56,11 +59,11 @@ export async function registerForEvent(app: FastifyInstance) {
         event?.maximumAttendees &&
         amountOfAttendeesForEvent >= event?.maximumAttendees
       ) {
-        throw new Error('The maximum number of attendees has been reached')
+        throw new BadRequest('The maximum number of attendees has been reached')
       }
 
       if (event === null) {
-        throw new Error('Event not found')
+        throw new BadRequest('Event not found')
       }
 
       const attendee = await prisma.attendee.create({
