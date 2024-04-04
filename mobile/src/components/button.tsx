@@ -2,11 +2,8 @@ import {
   Text,
   TouchableOpacity,
   TouchableOpacityProps,
-  ActivityIndicator,
-  StyleSheet
+  ActivityIndicator
 } from 'react-native'
-
-import { colors } from '@/styles/colors'
 
 type Props = TouchableOpacityProps & {
   title: string
@@ -18,7 +15,7 @@ export function Button({ title, isLoading = false, ...rest }: Props) {
     <TouchableOpacity
       activeOpacity={0.7}
       disabled={isLoading}
-      style={styles.button}
+      className="w-full h-14 bg-orange-500 items-center justify-center rounded-lg"
       {...rest}
     >
       {isLoading ? (
@@ -31,23 +28,3 @@ export function Button({ title, isLoading = false, ...rest }: Props) {
     </TouchableOpacity>
   )
 }
-
-const styles = StyleSheet.create({
-  button: {
-    width: '100%',
-    height: 56,
-    backgroundColor: colors.orange[500],
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8
-  }
-})
-
-/**
- * <TouchableOpacity
-      activeOpacity={0.7}
-      disabled={isLoading}
-      className="w-full h-14 bg-orange-500 items-center justify-center rounded-lg"
-      {...rest}
-    >
- */

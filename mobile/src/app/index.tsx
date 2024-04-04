@@ -1,19 +1,61 @@
+import { useState } from 'react'
+
 import { Image, StatusBar, View, Alert } from 'react-native'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
-import { Link } from 'expo-router'
+import { Link, Redirect } from 'expo-router'
+
+import { api } from '@/server/api'
+import { useBadgeStore } from '@/store/badge-store'
 
 import { Input } from '@/components/input'
 import { colors } from '@/styles/colors'
 import { Button } from '@/components/button'
-import { useState } from 'react'
+import axios from 'axios'
 
 export default function Home() {
   const [code, setCode] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  function handleAccesCredential() {
-    if (!code.trim()) {
-      return Alert.alert('Ingresso', 'Informe o código do ingresso.')
+  const badgeStore = useBadgeStore()
+
+  async function handleAccesCredential() {
+    try {
+      if (!code.trim()) {
+        return Alert.alert('Ingresso', 'Informe o código do ingresso.')
+      }
+
+      setIsLoading(true)
+
+      const { data } = await api.get(`/attendees/${code}/badge`)
+
+      badgeStore.save(data.badge)
+    } catch (error) {
+      setIsLoading(false)
+
+      if (axios.isAxiosError(error)) {
+        if (
+          String(error.response?.data.message).includes('internal server error')
+        ) {
+          return Alert.alert(
+            'Acessar credencial',
+            'Serviço indisponível. Tente novamente mais tarde.'
+          )
+        }
+        if (
+          String(error.response?.data.message).includes('Attendee not found')
+        ) {
+          return Alert.alert('Ingresso', 'Ingresso não encontrado.')
+        }
+      }
+      Alert.alert(
+        'Ingresso',
+        'Algo inesperado aconteceu. Tente novamente mais tarde.'
+      )
     }
+  }
+
+  if (badgeStore.data?.checkInURL) {
+    return <Redirect href="/ticket" />
   }
 
   return (
@@ -38,7 +80,11 @@ export default function Home() {
           />
         </Input>
 
-        <Button title="Acessar credencial" onPress={handleAccesCredential} />
+        <Button
+          title="Acessar credencial"
+          onPress={handleAccesCredential}
+          isLoading={isLoading}
+        />
         <Link
           href="/register"
           className="text-gray-100 text-base font-bold text-center mt-8"
