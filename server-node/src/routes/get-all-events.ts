@@ -24,6 +24,7 @@ export async function getAllEvents(app: FastifyInstance) {
       }
     },
     async (request, reply) => {
+      // Adicionar na api o campo de status do evento - ativo ou inativo
       const event = await prisma.event.findMany({
         select: {
           id: true,
