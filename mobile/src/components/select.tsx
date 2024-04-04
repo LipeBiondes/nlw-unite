@@ -2,7 +2,7 @@ import { Text, View } from 'react-native'
 import SelectDropdown from 'react-native-select-dropdown'
 
 import { colors } from '@/styles/colors'
-import { MaterialCommunityIcons } from '@expo/vector-icons'
+import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons'
 
 export type ItemProps = {
   id: string
@@ -25,7 +25,7 @@ export function Select({ data, onSelect }: Props) {
             <MaterialCommunityIcons
               name="calendar-month-outline"
               size={20}
-              color={colors.gray[200]}
+              color={colors.green[200]}
             />
             <Text className="flex-1 text-gray-200 text-base font-regular ">
               {(selectedItem && selectedItem.title) || 'Select your event'}
@@ -40,15 +40,18 @@ export function Select({ data, onSelect }: Props) {
       }}
       renderItem={(item, _, isSelected) => {
         return (
-          <View
-            className="w-full p-4 bg-zinc-900"
-            style={{
-              ...(isSelected && { backgroundColor: colors.green[500] })
-            }}
-          >
-            <Text className="flex-1 text-base font-regular color-gray-300">
+          <View className="w-full p-4 bg-green-500 flex-row items-center gap-3">
+            <Text className="flex-1 text-base font-regular color-white">
               {item.title}
             </Text>
+            <FontAwesome
+              name="chevron-left"
+              size={20}
+              color={colors.white}
+              style={{
+                ...(isSelected && { color: colors.orange[500] })
+              }}
+            />
           </View>
         )
       }}

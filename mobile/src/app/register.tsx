@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-import { ActivityIndicator, Alert, Image, StatusBar, View } from 'react-native'
+import { Alert, Image, StatusBar, View } from 'react-native'
 import { FontAwesome6, MaterialIcons } from '@expo/vector-icons'
 import { Link, router } from 'expo-router'
 
@@ -15,20 +15,14 @@ import { colors } from '@/styles/colors'
 import { api } from '@/server/api'
 import { useBadgeStore } from '@/store/badge-store'
 
-const EVENT_ID = '2e783d8f-2ba2-41ac-8d00-9940300a27f6'
-
 export type EventProps = {
   id: string
   title: string
 }
 
 export default function Register() {
-  const [events, setEvents] = useState<EventProps[]>([
-    {
-      id: '2e783d8f-2ba2-41ac-8d00-9940300a27f6',
-      title: 'Evento de exemplo'
-    }
-  ])
+  const [events, setEvents] = useState<EventProps[]>([])
+  const [eventId, setEventId] = useState<string>('')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -36,8 +30,22 @@ export default function Register() {
   const badgeStore = useBadgeStore()
 
   async function getEvents() {
-    const response = await api.get('/events')
-    setEvents(response.data.events)
+    try {
+      const response = await api.get('/events/all/')
+      setEvents(response.data.events)
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (
+          String(error.response?.data.message).includes('internal server error')
+        ) {
+          return Alert.alert(
+            'Eventos',
+            'Serviço indisponível. Tente novamente mais tarde.'
+          )
+        }
+      }
+      Alert.alert('Eventos', 'Nenhum evento encontrado.')
+    }
   }
 
   useEffect(() => {
@@ -46,13 +54,16 @@ export default function Register() {
 
   async function handleRegister() {
     try {
-      if (!name.trim() || !email.trim()) {
-        return Alert.alert('Inscrição', 'Preencha todos os campos.')
+      if (!name.trim() || !email.trim() || !eventId.trim()) {
+        return Alert.alert(
+          'Inscrição',
+          'Preencha todos os campos ou selecione um evento.'
+        )
       }
 
       setIsLoading(true)
 
-      const registerResponse = await api.post(`/events/${EVENT_ID}/attendees`, {
+      const registerResponse = await api.post(`/events/${eventId}/attendees`, {
         name,
         email
       })
@@ -125,11 +136,11 @@ export default function Register() {
       />
 
       <View className="w-full mt-12 gap-3">
-        {events.length > 0 ? (
-          <Select data={events} onSelect={eventSelected => eventSelected} />
-        ) : (
-          <ActivityIndicator className="text-green-500" />
-        )}
+        <Select
+          data={events}
+          onSelect={eventSelected => setEventId(eventSelected.id)}
+        />
+
         <Input>
           <FontAwesome6
             name="user-circle"

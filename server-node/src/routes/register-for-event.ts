@@ -16,7 +16,7 @@ export async function registerForEvent(app: FastifyInstance) {
         }),
         body: z.object({
           name: z.string().min(4),
-          email: z.string().email()
+          email: z.string().email().toLowerCase()
         }),
         response: {
           201: z.object({
@@ -29,6 +29,12 @@ export async function registerForEvent(app: FastifyInstance) {
       const { eventId } = request.params
       const { name, email } = request.body
 
+      const nameFormatted = name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\b\w/g, c => c.toUpperCase())
+
       const attendeeFromEmail = await prisma.attendee.findUnique({
         where: {
           eventId_email: {
@@ -39,7 +45,7 @@ export async function registerForEvent(app: FastifyInstance) {
       })
 
       if (attendeeFromEmail !== null) {
-        throw new Error('this email is already registered for this event')
+        throw new BadRequest('this email is already registered for this event')
       }
 
       const [event, amountOfAttendeesForEvent] = await Promise.all([
@@ -68,7 +74,7 @@ export async function registerForEvent(app: FastifyInstance) {
 
       const attendee = await prisma.attendee.create({
         data: {
-          name,
+          name: nameFormatted,
           email,
           eventId
         }

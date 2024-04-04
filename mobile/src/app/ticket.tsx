@@ -109,7 +109,8 @@ export default function Ticket() {
         </Text>
 
         <Text className="text-white font-regular text-base mt-1 mb-6">
-          Mostra ao mundo que você vai participar do{badgeStore.data.eventTitle}
+          Mostra ao mundo que você vai participar do{' '}
+          {badgeStore.data.eventTitle}
         </Text>
         <Button title="Compartilhar" onPress={handleShare} />
         <TouchableOpacity
